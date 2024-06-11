@@ -116,7 +116,7 @@ pub async fn delete_profile(app: AppHandle, device: String, profile: String) {
 }
 
 #[command]
-pub async fn create_instance(action: Action, context: Context) -> Result<Option<Vec<ActionInstance>>, Error> {
+pub async fn create_instance(action: Action, context: Context) -> Result<Option<ActionInstance>, Error> {
 	if !action.controllers.contains(&context.controller) {
 		return Ok(None);
 	}
@@ -146,7 +146,7 @@ pub async fn create_instance(action: Action, context: Context) -> Result<Option<
 }
 
 #[command]
-pub async fn move_slot(source: Context, destination: Context) -> Result<Option<Vec<ActionInstance>>, Error> {
+pub async fn move_slot(source: Context, destination: Context) -> Result<Option<ActionInstance>, Error> {
 	if source.controller != destination.controller {
 		return Ok(None);
 	}
@@ -155,7 +155,7 @@ pub async fn move_slot(source: Context, destination: Context) -> Result<Option<V
 	let src = get_slot_mut(&source, &mut locks).await?;
 	let multi_action = src.len() > 1;
 
-	let mut vec: Vec<ActionInstance> = vec![];
+	let mut vec: Vec<ActionInstance> = vec![]; // TODO
 
 	for (index, instance) in src.iter_mut().enumerate() {
 		let mut new = instance.clone();
@@ -266,7 +266,7 @@ pub async fn update_image(context: Context, image: String) {
 #[derive(Clone, serde::Serialize)]
 struct UpdateStateEvent {
 	context: Context,
-	contents: Vec<ActionInstance>,
+	contents: ActionInstance,
 }
 
 pub async fn update_state(app: &AppHandle, context: Context, locks: &mut LocksMut<'_>) -> Result<(), anyhow::Error> {
