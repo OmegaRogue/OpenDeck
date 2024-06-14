@@ -93,7 +93,7 @@ pub async fn set_selected_profile(app: AppHandle, device: String, id: String, pr
 					let _ = crate::events::outbound::will_appear::will_disappear(instance, true).await;
 				}
 			}
-			
+
 		}
 	}
 
@@ -109,7 +109,7 @@ pub async fn set_selected_profile(app: AppHandle, device: String, id: String, pr
 				let _ = crate::events::outbound::will_appear::will_appear(instance, true).await;
 			}
 		}
-		
+
 	}
 	store.save()?;
 
@@ -148,7 +148,7 @@ pub async fn create_instance(action: Action, context: Context) -> Result<Option<
 		settings: serde_json::Value::Object(serde_json::Map::new()),
 		multi: vec![],
 	};
-	
+
 	if slot.is_none() {
 		let _ = slot.insert(instance.clone());
 		let slot = slot.clone();
@@ -175,11 +175,11 @@ pub async fn move_slot(source: Context, destination: Context) -> Result<Option<O
 	let src = get_slot_mut(&source, &mut locks).await?;
 	let multi_action = !src.as_ref().unwrap().multi.is_empty();
 
-	if src.is_none() { 
+	if src.is_none() {
 		return Err(Error::from(anyhow!("How did this happen?")))
 	}
 	let mut vec: ActionInstance = src.clone().unwrap();
-	
+
 	for (index, instance) in src.clone().unwrap().multi.iter_mut().enumerate() {
 		let mut new = instance.clone();
 		new.context = ActionContext::from_context(destination.clone(), index as u16);
