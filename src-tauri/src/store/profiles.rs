@@ -39,8 +39,8 @@ impl ProfileStores {
 		} else {
 			let default = Profile {
 				id: id.to_owned(),
-				keys: vec![vec![]; (device.rows * device.columns) as usize],
-				sliders: vec![vec![]; device.sliders as usize],
+				keys: vec![None; (device.rows * device.columns) as usize],
+				sliders: vec![None; device.sliders as usize],
 			};
 
 			let store = Store::new(path, app.path_resolver().app_config_dir().unwrap(), default).context(format!("Failed to create store for profile {}", path))?;
@@ -66,7 +66,11 @@ impl ProfileStores {
 		let mut all = vec![];
 		for store in self.stores.values() {
 			for slot in store.value.keys.iter().chain(&store.value.sliders) {
-				for instance in slot {
+				let slot_r = slot.as_ref().unwrap();
+				if slot_r.action.plugin == plugin {
+					all.push(slot_r.context.clone());
+				}
+				for instance in &slot_r.multi[..] {
 					if instance.action.plugin == plugin {
 						all.push(instance.context.clone());
 					}
@@ -193,7 +197,7 @@ pub async fn acquire_locks_mut() -> LocksMut<'static> {
 	}
 }
 
-pub async fn get_slot<'a>(context: &crate::shared::Context, locks: &'a Locks<'_>) -> Result<&'a Vec<crate::shared::ActionInstance>, anyhow::Error> {
+pub async fn get_slot<'a>(context: &crate::shared::Context, locks: &'a Locks<'_>) -> Result<&'a Option<crate::shared::ActionInstance>, anyhow::Error> {
 	let device = locks.devices.get(&context.device).unwrap();
 	let store = locks.profile_stores.get_profile_store(device, &context.profile)?;
 
@@ -205,7 +209,7 @@ pub async fn get_slot<'a>(context: &crate::shared::Context, locks: &'a Locks<'_>
 	Ok(configured)
 }
 
-pub async fn get_slot_mut<'a>(context: &crate::shared::Context, locks: &'a mut LocksMut<'_>) -> Result<&'a mut Vec<crate::shared::ActionInstance>, anyhow::Error> {
+pub async fn get_slot_mut<'a>(context: &crate::shared::Context, locks: &'a mut LocksMut<'_>) -> Result<&'a mut Option<crate::shared::ActionInstance>, anyhow::Error> {
 	let device = locks.devices.get(&context.device).unwrap();
 	let store = locks.profile_stores.get_profile_store_mut(device, &context.profile, crate::APP_HANDLE.get().unwrap())?;
 
@@ -219,7 +223,11 @@ pub async fn get_slot_mut<'a>(context: &crate::shared::Context, locks: &'a mut L
 
 pub async fn get_instance<'a>(context: &crate::shared::ActionContext, locks: &'a Locks<'_>) -> Result<Option<&'a crate::shared::ActionInstance>, anyhow::Error> {
 	let slot = get_slot(&(context.into()), locks).await?;
-	for instance in slot {
+	let slot_r = slot.as_ref().unwrap();
+	if slot_r.context == *context {
+		return Ok(Some(slot_r));
+	}
+	for instance in &slot_r.multi[..] {
 		if instance.context == *context {
 			return Ok(Some(instance));
 		}
@@ -229,7 +237,11 @@ pub async fn get_instance<'a>(context: &crate::shared::ActionContext, locks: &'a
 
 pub async fn get_instance_mut<'a>(context: &crate::shared::ActionContext, locks: &'a mut LocksMut<'_>) -> Result<Option<&'a mut crate::shared::ActionInstance>, anyhow::Error> {
 	let slot = get_slot_mut(&(context.into()), locks).await?;
-	for instance in slot {
+	let slot_r = slot.as_mut().unwrap();
+	if slot_r.context == *context {
+		return Ok(Some(slot_r));
+	}
+	for instance in slot_r.multi[..].iter_mut() {
 		if instance.context == *context {
 			return Ok(Some(instance));
 		}

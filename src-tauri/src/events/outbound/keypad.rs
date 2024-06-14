@@ -27,8 +27,8 @@ pub async fn key_down(device: &str, key: u8) -> Result<(), anyhow::Error> {
 	};
 	let slot = get_slot_mut(&context, &mut locks).await?;
 
-	if slot.len() == 1 {
-		let instance = &slot[0];
+	if slot.as_ref().unwrap().multi.is_empty() {
+		let instance = slot.as_ref().unwrap();
 		send_to_plugin(
 			&instance.action.plugin,
 			&KeyEvent {
@@ -41,7 +41,7 @@ pub async fn key_down(device: &str, key: u8) -> Result<(), anyhow::Error> {
 		)
 		.await?;
 	} else {
-		for instance in slot {
+		for instance in slot.as_mut().unwrap().multi.iter_mut() {
 			send_to_plugin(
 				&instance.action.plugin,
 				&KeyEvent {
@@ -93,10 +93,7 @@ pub async fn key_up(device: &str, key: u8) -> Result<(), anyhow::Error> {
 	};
 
 	let slot = get_slot_mut(&context, &mut locks).await?;
-	if slot.len() != 1 {
-		return Ok(());
-	}
-	let instance = &mut slot[0];
+	let instance = slot.as_mut().unwrap();
 
 	if instance.states.len() == 2 && !instance.action.disable_automatic_states {
 		instance.current_state = (instance.current_state + 1) % (instance.states.len() as u16);
