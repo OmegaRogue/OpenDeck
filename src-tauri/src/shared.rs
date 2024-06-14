@@ -65,7 +65,6 @@ impl Default for ActionState {
 #[serde_inline_default]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Action {
-	
 	#[serde(alias = "Name")]
 	pub name: String,
 
@@ -188,7 +187,6 @@ impl From<&ActionContext> for Context {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct ActionInstance {
 	pub action: Action,
-	pub actions: Vec<ActionInstance>,
 	pub context: ActionContext,
 	pub states: Vec<ActionState>,
 	pub current_state: u16,
