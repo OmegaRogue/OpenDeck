@@ -14,7 +14,8 @@
 	export let device: DeviceInfo;
 	export let profile: Profile;
 
-	async function iframeOnLoad(instance: ActionInstance) {
+	async function iframeOnLoad(instance?: ActionInstance) {
+		if (!instance) return;
 		const iframe = iframes[instance.context];
 		const split = instance.context.split(".");
 
@@ -99,7 +100,7 @@
 		}
 	});
 
-	$: instances = profile.keys.reduce((prev, current) => prev.concat(current), []).concat(profile.sliders.reduce((prev, current) => prev.concat(current), []));
+	$: instances = profile.keys.concat(profile.sliders);
 </script>
 
 <div class="grow overflow-scroll bg-white dark:bg-neutral-900 border-t dark:border-neutral-700" bind:this={iframeContainer}>
@@ -110,12 +111,12 @@
 	>
 		✕
 	</button>
-	{#each instances as instance (instance.context)}
-		{#if instance.action.property_inspector}
+	{#each instances as instance}
+		{#if instance?.action.property_inspector}
 			<iframe
 				title="Property inspector"
 				class="w-full h-full hidden"
-				class:!block={$inspectedInstance == instance.context}
+				class:!block={$inspectedInstance === instance.context}
 				src={"http://localhost:57118/" + instance.action.property_inspector + "|opendeck_property_inspector"}
 				name={instance.context}
 				bind:this={iframes[instance.context]}

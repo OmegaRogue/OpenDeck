@@ -23,7 +23,7 @@
 		let array = controller == "Encoder" ? profile.sliders : profile.keys;
 		if (dataTransfer?.getData("action")) {
 			let action = JSON.parse(dataTransfer?.getData("action"));
-			if (array[position].length >= 1 && (!array[position][0].action.supported_in_multi_actions || !action.supported_in_multi_actions)) {
+			if (array[position] && (!array[position]?.action.supported_in_multi_actions || !action.supported_in_multi_actions)) {
 				return;
 			}
 			array[position] = await invoke("create_instance", { context, action });
@@ -31,13 +31,13 @@
 		} else if (dataTransfer?.getData("controller")) {
 			let oldArray = dataTransfer?.getData("controller") == "Encoder" ? profile.sliders : profile.keys;
 			let oldPosition = parseInt(dataTransfer?.getData("position"));
-			let response: ActionInstance[] = await invoke("move_slot", {
+			let response: ActionInstance|undefined = await invoke("move_slot", {
 				source: { device: device.id, profile: profile.id, controller: dataTransfer?.getData("controller"), position: oldPosition },
 				destination: context
 			});
 			if (response) {
 				array[position] = response;
-				oldArray[oldPosition] = [];
+				oldArray[oldPosition] = undefined;
 				profile = profile;
 			}
 		}
@@ -50,7 +50,7 @@
 </script>
 
 {#key device}
-	<div class="flex flex-row" class:hidden={selectedDevice != device.id}>
+	<div class="flex flex-row" class:hidden={selectedDevice !== device.id}>
 		{#each { length: device.sliders } as _, i}
 			<Slider
 				context={{ device: device.id, profile: profile.id, controller: "Encoder", position: i }}

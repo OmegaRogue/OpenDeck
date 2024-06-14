@@ -173,7 +173,9 @@ pub async fn move_slot(source: Context, destination: Context) -> Result<Option<O
 
 	let mut locks = acquire_locks_mut().await;
 	let src = get_slot_mut(&source, &mut locks).await?;
-	let multi_action = !src.as_ref().unwrap().multi.is_empty();
+	if src.is_none() {
+		return Ok(None);
+	}
 
 	if src.is_none() {
 		return Err(Error::from(anyhow!("How did this happen?")))

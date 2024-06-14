@@ -11,7 +11,7 @@
 
 	export let profile: Profile;
 
-	let slot: ActionInstance[];
+	let slot: ActionInstance | undefined;
 	$: {
 		if ($inspectedMultiAction?.controller == "Encoder") {
 			slot = profile.sliders[$inspectedMultiAction.position];
@@ -29,16 +29,17 @@
 		if (dataTransfer?.getData("action")) {
 			let action = JSON.parse(dataTransfer?.getData("action"));
 			if (!action.supported_in_multi_actions) return;
-			let response: ActionInstance[] = await invoke("create_instance", { context: $inspectedMultiAction, action });
+			let response: ActionInstance | undefined = await invoke("create_instance", { context: $inspectedMultiAction, action });
 			if (response) slot = response;
 		}
 	}
 
 	async function removeInstance(index: number) {
-		await invoke("remove_instance", { context: slot[index].context });
-		let temp = [...slot];
+		if (!slot) return;
+		await invoke("remove_instance", { context: slot.context });
+		let temp = [...slot.multi??[]];
 		temp.splice(index, 1);
-		slot = temp;
+		slot.multi = temp;
 	}
 
 	let context: Context;
@@ -51,19 +52,21 @@
 </div>
 
 <div class="flex flex-col h-80 overflow-scroll">
-	{#each slot as instance, index}
-		<div class="flex flex-row items-center mx-4 my-1 bg-neutral-100 dark:bg-neutral-800 rounded-md">
-			<Key inslot={[instance]} {context} active={false} scale={3/4} />
-			<p class="ml-4 text-xl dark:text-neutral-400"> {instance.action.name} </p>
-			<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-			<button
-				class="ml-auto mr-10"
-				on:click={() => removeInstance(index)} on:keyup={() => removeInstance(index)}
-			>
-				<Trash size="32" color={document.documentElement.classList.contains("dark") ? "#C0BFBC" : "#77767B"} />
-			</button>
-		</div>
-	{/each}
+	{#if slot !== undefined && slot.multi !== undefined}
+	    {#each slot.multi as instance, index}
+	    	<div class="flex flex-row items-center mx-4 my-1 bg-neutral-100 dark:bg-neutral-800 rounded-md">
+	    		<Key inslot={instance} {context} active={false} scale={3/4} />
+	    		<p class="ml-4 text-xl dark:text-neutral-400"> {instance.action.name} </p>
+	    		<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+	    		<button
+	    			class="ml-auto mr-10"
+	    			on:click={() => removeInstance(index)} on:keyup={() => removeInstance(index)}
+	    		>
+	    			<Trash size="32" color={document.documentElement.classList.contains("dark") ? "#C0BFBC" : "#77767B"} />
+	    		</button>
+	    	</div>
+	    {/each}
+	{/if}
 	<div
 		class="flex flex-row items-center mx-4 mt-1 mb-4 p-3 bg-neutral-100 dark:bg-neutral-800 border-2 border-dashed dark:border-neutral-700 rounded-md"
 		on:dragover={handleDragOver} on:drop={handleDrop}
