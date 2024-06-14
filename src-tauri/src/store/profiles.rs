@@ -1,10 +1,9 @@
 use super::Store;
-use crate::shared::{ActionInstance, Profile};
+use crate::shared::Profile;
 
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
-use std::ptr::null;
 
 use serde::{Deserialize, Serialize};
 
@@ -67,8 +66,10 @@ impl ProfileStores {
 		let mut all = vec![];
 		for store in self.stores.values() {
 			for slot in store.value.keys.iter().chain(&store.value.sliders) {
-				if slot.action.plugin == plugin {
-					all.push(slot.context.clone());
+				for instance in slot {
+					if instance.action.plugin == plugin {
+						all.push(instance.context.clone());
+					}
 				}
 			}
 		}
@@ -192,7 +193,7 @@ pub async fn acquire_locks_mut() -> LocksMut<'static> {
 	}
 }
 
-pub async fn get_slot<'a>(context: &crate::shared::Context, locks: &'a Locks<'_>) -> Result<&'a crate::shared::ActionInstance, anyhow::Error> {
+pub async fn get_slot<'a>(context: &crate::shared::Context, locks: &'a Locks<'_>) -> Result<&'a Vec<crate::shared::ActionInstance>, anyhow::Error> {
 	let device = locks.devices.get(&context.device).unwrap();
 	let store = locks.profile_stores.get_profile_store(device, &context.profile)?;
 
@@ -204,7 +205,7 @@ pub async fn get_slot<'a>(context: &crate::shared::Context, locks: &'a Locks<'_>
 	Ok(configured)
 }
 
-pub async fn get_slot_mut<'a>(context: &crate::shared::Context, locks: &'a mut LocksMut<'_>) -> Result<&'a mut crate::shared::ActionInstance, anyhow::Error> {
+pub async fn get_slot_mut<'a>(context: &crate::shared::Context, locks: &'a mut LocksMut<'_>) -> Result<&'a mut Vec<crate::shared::ActionInstance>, anyhow::Error> {
 	let device = locks.devices.get(&context.device).unwrap();
 	let store = locks.profile_stores.get_profile_store_mut(device, &context.profile, crate::APP_HANDLE.get().unwrap())?;
 
@@ -218,16 +219,20 @@ pub async fn get_slot_mut<'a>(context: &crate::shared::Context, locks: &'a mut L
 
 pub async fn get_instance<'a>(context: &crate::shared::ActionContext, locks: &'a Locks<'_>) -> Result<Option<&'a crate::shared::ActionInstance>, anyhow::Error> {
 	let slot = get_slot(&(context.into()), locks).await?;
-	if slot.context == *context {
-		return Ok(Some(slot));
+	for instance in slot {
+		if instance.context == *context {
+			return Ok(Some(instance));
+		}
 	}
 	Ok(None)
 }
 
 pub async fn get_instance_mut<'a>(context: &crate::shared::ActionContext, locks: &'a mut LocksMut<'_>) -> Result<Option<&'a mut crate::shared::ActionInstance>, anyhow::Error> {
 	let slot = get_slot_mut(&(context.into()), locks).await?;
-	if slot.context == *context {
-		return Ok(Some(slot));
+	for instance in slot {
+		if instance.context == *context {
+			return Ok(Some(instance));
+		}
 	}
 	Ok(None)
 }

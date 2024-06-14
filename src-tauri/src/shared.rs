@@ -196,8 +196,8 @@ pub struct ActionInstance {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Profile {
 	pub id: String,
-	pub keys: Vec<ActionInstance>,
-	pub sliders: Vec<ActionInstance>,
+	pub keys: Vec<Vec<ActionInstance>>,
+	pub sliders: Vec<Vec<ActionInstance>>,
 }
 
 /// A map of category names to a list of actions in that category.
